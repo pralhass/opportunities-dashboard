@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opportunities & Requests</title>
+<style>
+  /* ─── REPLACE THIS WITH YOUR CLOUDFLARE WORKER URL ──────────────────────── */
+  /* See WORKER constant in the <script> below                                  */
+
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f2f2f7; color: #1c1c1e; min-height: 100vh; }
+
+  .header { background: #fff; border-bottom: 1px solid #e5e5ea; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+  .header-left h1 { font-size: 16px; font-weight: 700; }
+  .header-left p  { font-size: 11px; color: #8e8e93; margin-top: 2px; }
+  .header-right   { display: flex; align-items: center; gap: 8px; }
+  .updated-badge  { font-size: 11px; color: #8e8e93; background: #f2f2f7; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+  .reload-btn     { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1.5px solid #e5e5ea; background: #fff; cursor: pointer; color: #636366; transition: all 0.15s; }
+  .reload-btn:hover { border-color: #007aff; color: #007aff; }
+
+  .stats-row { display: flex; gap: 8px; padding: 12px 16px 6px; flex-wrap: wrap; }
+  .stat-card { flex: 1; min-width: 70px; background: #fff; border-radius: 12px; padding: 10px 12px; border: 1px solid #e5e5ea; text-align: center; }
+  .stat-num  { font-size: 22px; font-weight: 700; color: #007aff; line-height: 1; }
+  .stat-lbl  { font-size: 10px; color: #8e8e93; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .stat-card.danger .stat-num  { color: #ff3b30; }
+  .stat-card.warning .stat-num { color: #ff9500; }
+  .stat-card.success .stat-num { color: #34c759; }
+
+  .filters-wrap  { padding: 8px 16px 4px; }
+  .filters-label { font-size: 10px; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 5px; }
+  .filters       { display: flex; gap: 6px; flex-wrap: wrap; }
+  .fbtn { padding: 4px 11px; border-radius: 20px; border: 1.5px solid #e5e5ea; background: #fff; font-size: 12px; font-weight: 500; cursor: pointer; color: #3a3a3c; transition: all 0.15s; white-space: nowrap; }
+  .fbtn:hover  { border-color: #007aff; color: #007aff; }
+  .fbtn.active { background: #007aff; border-color: #007aff; color: #fff; }
+  .fbtn .below-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ff3b30; margin-left: 4px; vertical-align: middle; }
+
+  .type-wrap { padding: 6px 16px 10px; }
+  .type-row  { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tfbtn { padding: 4px 11px; border-radius: 20px; border: 1.5px solid #e5e5ea; background: #fff; font-size: 12px; font-weight: 500; cursor: pointer; color: #3a3a3c; transition: all 0.15s; white-space: nowrap; }
+  .tfbtn:hover  { border-color: #555; }
+  .tfbtn.active { color: #fff; border-color: transparent; background: #1c1c1e; }
+
+  .resolved-toggle-wrap { padding: 4px 16px 10px; }
+  .resolved-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; border: 1.5px solid #e5e5ea; background: #fff; font-size: 12px; font-weight: 500; cursor: pointer; color: #636366; transition: all 0.15s; }
+  .resolved-toggle:hover { border-color: #34c759; color: #1a6b1a; }
+  .resolved-toggle.active { background: #e8ffe8; border-color: #34c759; color: #1a6b1a; }
+
+  .content { padding: 0 16px 24px; }
+  .loading { text-align: center; padding: 50px 20px; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #e5e5ea; border-top-color: #007aff; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 14px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading p    { color: #8e8e93; font-size: 13px; }
+  .loading .sub { font-size: 11px; color: #aeaeb2; margin-top: 5px; }
+  .prog-wrap    { width: 220px; height: 4px; background: #e5e5ea; border-radius: 4px; margin: 10px auto 0; }
+  .prog-bar     { height: 4px; background: #007aff; border-radius: 4px; transition: width 0.4s; width: 0%; }
+  .found-live   { font-size: 12px; color: #34c759; font-weight: 600; margin-top: 8px; min-height: 18px; }
+
+  /* Thread progress */
+  .thread-progress { background: #fff; border: 1px solid #e5e5ea; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: none; }
+  .thread-progress.visible { display: block; }
+  .thread-progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .thread-progress-title  { font-size: 12px; font-weight: 600; color: #3a3a3c; display: flex; align-items: center; gap: 6px; }
+  .spinner-sm { width: 12px; height: 12px; border: 2px solid #e5e5ea; border-top-color: #5856d6; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  .thread-progress-count { font-size: 11px; color: #8e8e93; }
+  .thread-prog-bar-wrap  { height: 4px; background: #e5e5ea; border-radius: 4px; margin-bottom: 8px; }
+  .thread-prog-bar-fill  { height: 4px; background: #5856d6; border-radius: 4px; transition: width 0.3s; width: 0%; }
+  .thread-progress-current { font-size: 11px; color: #636366; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .thread-progress-stats { display: flex; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f2f2f7; }
+  .thread-stat { font-size: 11px; color: #8e8e93; }
+  .thread-stat span { font-weight: 700; color: #3a3a3c; }
+  .thread-stat.resolved span { color: #34c759; }
+
+  /* Cards */
+  .cards { display: flex; flex-direction: column; gap: 10px; }
+  .section-header { font-size: 11px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; }
+  .section-header.urgent { color: #ff3b30; }
+  .card { background: #fff; border-radius: 14px; border: 1px solid #e5e5ea; overflow: hidden; transition: box-shadow 0.15s; }
+  .card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.08); }
+  .card.priority-critical { border-color: #ff3b3040; }
+  .card.resolved-card { opacity: 0.55; }
+  .card.resolved-card .card-summary { text-decoration: line-through; color: #8e8e93; }
+  .card-inner { padding: 14px 16px 12px; border-left: 4px solid var(--ch-color, #e5e5ea); }
+  .card-top  { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
+  .card-meta { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; min-width: 0; }
+  .ch-pill   { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px; white-space: nowrap; }
+  .sender    { font-size: 12px; color: #636366; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+  .card-date { font-size: 11px; color: #aeaeb2; white-space: nowrap; flex-shrink: 0; }
+  .badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px; white-space: nowrap; }
+  .badge-below-target { background: #fff0f0; color: #cc0000; border: 1px solid #ffcccc; }
+  .badge-unanswered   { background: #fff8e0; color: #7a5c00; border: 1px solid #ffe066; }
+  .badge-active       { background: #e8f3ff; color: #0055cc; border: 1px solid #c0d8ff; }
+  .badge-resolved-thread { background: #e8ffe8; color: #1a6b1a; border: 1px solid #b3e6b3; }
+  .badge-id { background: #f2f2f7; color: #8e8e93; border: 1px solid #e5e5ea; font-size: 9px; font-family: monospace; letter-spacing: 0.3px; }
+  .badge-rank { background: #f2f2f7; color: #636366; border: 1px solid #e5e5ea; font-size: 9px; }
+  .badge-projects { background: #e8ffe8; color: #1a6b1a; border: 1px solid #b3e6b3; text-decoration: none; font-weight: 700; transition: all 0.15s; }
+  .badge-projects:hover { background: #34c759; color: #fff; border-color: #34c759; }
+  .card-text { font-size: 13px; color: #48484a; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 12px; background: #f9f9fb; border-radius: 8px; padding: 8px 10px; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .card-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .slack-link { font-size: 12px; color: #007aff; text-decoration: none; font-weight: 600; padding: 5px 12px; border-radius: 20px; background: #e8f3ff; transition: all 0.15s; white-space: nowrap; }
+  .slack-link:hover { background: #007aff; color: #fff; }
+  .ss-btn { font-size: 12px; color: #1c6b3a; text-decoration: none; font-weight: 600; padding: 5px 12px; border-radius: 20px; background: #e8ffe8; border: 1.5px solid #b3e6b3; transition: all 0.15s; white-space: nowrap; cursor: pointer; }
+  .ss-btn:hover { background: #34c759; color: #fff; border-color: #34c759; }
+  .empty { text-align: center; padding: 50px 20px; color: #8e8e93; font-size: 14px; }
+
+  .config-banner { background: #fff8e0; border: 1px solid #ffcc00; border-radius: 10px; padding: 10px 14px; margin: 12px 16px; font-size: 12px; color: #7a5c00; display: none; }
+  .config-banner.visible { display: block; }
+  .config-banner strong { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>🎯 Opportunities & Requests</h1>
+    <p>Prioritised by market · threads verified</p>
+  </div>
+  <div class="header-right">
+    <span class="updated-badge" id="updated-time">Loading…</span>
+    <button class="reload-btn" onclick="location.reload()">↺ Reload</button>
+  </div>
+</div>
+
+<div id="config-banner" class="config-banner">
+  ⚠️ <strong>Setup required:</strong> Open this file and set the <code>WORKER</code> constant to your Cloudflare Worker URL.
+</div>
+
+<div id="stats-row" class="stats-row" style="display:none">
+  <div class="stat-card"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">Requests</div></div>
+  <div class="stat-card danger"><div class="stat-num" id="s-below">0</div><div class="stat-lbl">Below target</div></div>
+  <div class="stat-card warning"><div class="stat-num" id="s-unanswered">0</div><div class="stat-lbl">No response</div></div>
+  <div class="stat-card success"><div class="stat-num" id="s-resolved">0</div><div class="stat-lbl">Resolved</div></div>
+</div>
+
+<div id="filters-wrap" class="filters-wrap" style="display:none">
+  <div class="filters-label">Channel</div>
+  <div class="filters" id="channel-filters">
+    <button class="fbtn active" data-ch="all" onclick="filterCh('all',this)">All</button>
+  </div>
+</div>
+
+<div id="type-wrap" class="type-wrap" style="display:none">
+  <div class="filters-label">Type</div>
+  <div class="type-row">
+    <button class="tfbtn active" data-type="all" onclick="filterType('all',this)">All</button>
+    <button class="tfbtn" data-type="problem"     onclick="filterType('problem',this)">🔴 Problem</button>
+    <button class="tfbtn" data-type="opportunity" onclick="filterType('opportunity',this)">🚀 Opportunity</button>
+    <button class="tfbtn" data-type="help"        onclick="filterType('help',this)">🙋 Help request</button>
+  </div>
+</div>
+
+<div id="resolved-toggle-wrap" class="resolved-toggle-wrap" style="display:none">
+  <button class="resolved-toggle" id="resolved-toggle-btn" onclick="toggleResolved(this)">
+    ✅ Show resolved (<span id="resolved-count">0</span>)
+  </button>
+</div>
+
+<div class="content">
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Searching Slack messages…</p>
+    <div class="sub" id="prog-msg">Starting…</div>
+    <div class="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+    <div class="found-live" id="found-live"></div>
+  </div>
+  <div id="main-wrap" style="display:none">
+    <div class="thread-progress" id="thread-progress">
+      <div class="thread-progress-header">
+        <div class="thread-progress-title"><div class="spinner-sm"></div> Verifying threads</div>
+        <div class="thread-progress-count" id="tp-count">0 / 0</div>
+      </div>
+      <div class="thread-prog-bar-wrap"><div class="thread-prog-bar-fill" id="tp-bar"></div></div>
+      <div class="thread-progress-current" id="tp-current"></div>
+      <div class="thread-progress-stats">
+        <div class="thread-stat resolved">Resolved: <span id="tp-resolved">0</span></div>
+        <div class="thread-stat">No response: <span id="tp-unanswered">0</span></div>
+        <div class="thread-stat">Active: <span id="tp-active">0</span></div>
+      </div>
+    </div>
+    <div id="cards-wrap"></div>
+  </div>
+</div>
+
+<script>
+// ─── ⚙️  CONFIGURATION — edit these two values ────────────────────────────────
+const WORKER = 'https://opportunities-proxy.paulo-ralha.workers.dev/'; // Cloudflare Worker URL
+
+// Market data — updated automatically by the daily scheduled task in Cowork
+// Last updated: 2026-06-05
+const MARKET_DATA = {
+  'italia':      { rank: 1, pct: 71,  below: true  },
+  'france':      { rank: 2, pct: 80,  below: true  },
+  'spain':       { rank: 3, pct: 90,  below: true  },
+  'portugal':    { rank: 4, pct: 95,  below: true  },
+  'belgium':     { rank: 5, pct: 64,  below: true  },
+  'switzerland': { rank: 6, pct: 155, below: false },
+  'cz_sk':       { rank: 7, pct: 135, below: false },
+  'noruega':     { rank: 9, pct: 40,  below: true  },
+  'uk':          { rank: 10, pct: null, below: false },
+  'distribution':{ rank: 99, pct: null, below: false },
+  'team':        { rank: 100, pct: null, below: false },
+  'dashboar-mensagens': { rank: 101, pct: null, below: false },
+};
+
+const SMARTSHEET_SHEET_LINK = 'https://app.smartsheet.com/sheets/3RPvjPj4JcrwvWJwHHm4hqf9XjGwh3qQ9WMVpxf1';
+const SMARTSHEET_FORM_URL   = 'https://app.smartsheet.com/b/form/c5833e9a70524de58fcfcbebcd148157';
+
+const TARGET_CHANNELS = new Set([
+  'dashboar-mensagens','portugal','belgium','uk','france','spain','italia',
+  'cz_sk','distribution','noruega','switzerland','team'
+]);
+
+const MSG_TYPES = {
+  problem:     { emoji: '🔴', label: 'Problem',      color: '#ff3b30', bg: '#fff0f0' },
+  opportunity: { emoji: '🚀', label: 'Opportunity',  color: '#5856d6', bg: '#f0f0ff' },
+  help:        { emoji: '🙋', label: 'Help request', color: '#ff9500', bg: '#fff8e0' },
+};
+
+const CH_COLORS = {
+  'dashboar-mensagens':'#34c759', portugal:'#ff3b30', belgium:'#ff9500',
+  uk:'#34c759', france:'#007aff', spain:'#af52de', italia:'#5ac8fa',
+  cz_sk:'#ff2d55', distribution:'#5856d6', noruega:'#30b0c7',
+  switzerland:'#ff6b6b', team:'#1c1c1e',
+};
+
+const CHANNEL_CODES = {
+  'dashboar-mensagens':'DASH','italia':'IT','france':'FR','spain':'ES',
+  'portugal':'PT','belgium':'BE','switzerland':'CH','noruega':'NO',
+  'cz_sk':'CZ','uk':'UK','distribution':'DL','team':'TEAM',
+};
+
+const RESOLVED_KW = [
+  'done','✅','concluído','concluido','resolvido','resolved','feito','feita',
+  'sorted','completed','tratado','fechado','closed','entregue',
+  'já está','ficou done','ficou resolvido','foi aprovado',
+  'already done','already added','already submitted',
+];
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let allItems    = [];
+let activeCh    = 'all';
+let activeType  = 'all';
+let showResolved = false;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function generateMsgId(channel, ts) {
+  const code = CHANNEL_CODES[channel] || channel.toUpperCase().slice(0, 4);
+  const d    = new Date(parseFloat(ts) * 1000);
+  const date = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  const tail = String(Math.floor(parseFloat(ts))).slice(-4);
+  return `${code}-${date}-${tail}`;
+}
+
+function formatDate(ts) {
+  if (!ts) return '';
+  const d    = new Date(parseFloat(ts) * 1000);
+  const diff = Math.floor((Date.now() - d) / 86400000);
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'yesterday';
+  if (diff < 7)  return `${diff}d ago`;
+  if (diff < 30) return `${Math.floor(diff / 7)}w ago`;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: diff > 365 ? 'numeric' : undefined });
+}
+
+function cleanSlackText(text) {
+  if (!text) return '';
+  let t = text;
+  t = t.replace(/<!channel>/g, '@channel').replace(/<!here>/g, '@here');
+  t = t.replace(/<@[^|>]+\|([^>]+)>/g, '@$1').replace(/<@[^>]+>/g, '@someone');
+  t = t.replace(/<#[^|>]+\|([^>]+)>/g, '#$1').replace(/<#[^>]+>/g, '#channel');
+  t = t.replace(/<https?:\/\/[^|>]+\|([^>]+)>/g, '[$1]').replace(/<https?:\/\/[^\s>]+>/g, '');
+  t = t.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  t = t.replace(/:([a-z0-9_\-]+):/g, (m, name) => {
+    const map = { red_circle:'🔴', rocket:'🚀', raising_hand:'🙋', person_raising_hand:'🙋',
+      white_check_mark:'✅', x:'❌', warning:'⚠️', thumbsup:'👍', fire:'🔥' };
+    return map[name] || '';
+  });
+  t = t.replace(/\s{2,}/g, ' ').trim();
+  return t;
+}
+
+function detectRoles(text) {
+  const t = text.toLowerCase();
+  const roles = [];
+  const has = (...w) => w.some(x => t.includes(x));
+  if (has('meta','facebook','google ads','bing','tiktok','paid','cpa','cpc','roas','campaign','budget','spend','pmax')) roles.push('Paid Media');
+  if (has('creative','refresh','design','visual','banner','layout','artwork','video','foto')) roles.push('Design');
+  if (has('copy','content','headline','script','email','text','angle','hook','messaging')) roles.push('Content');
+  if (has('seo','organic','ranking','local page','google my business','keyword','backlink')) roles.push('SEO');
+  if (has('a/b','ab test','cro','landing page','conversion rate','cvr','ux','hypothesis')) roles.push('CRO');
+  if (has('analytics','dashboard','report','metric','kpi','data','tracking','attribution','insight','performance')) roles.push('Analytics');
+  if (has('backlog','sprint','project','priorit','strategy','roadmap','plan','decision','meeting','checkpoint')) roles.push('Strategy');
+  return roles.length > 0 ? roles.slice(0, 3) : ['Strategy'];
+}
+
+function priorityScore(item) {
+  const m   = MARKET_DATA[item.channel];
+  const rank = m ? m.rank : 500;
+  const boost = m?.below ? -1000 : 0;
+  const noReply = item.threadStatus === 'unanswered' ? -50 : 0;
+  return rank * 10 + boost + noReply;
+}
+
+function sortItems() {
+  allItems.sort((a, b) => {
+    const aHide = a.resolved ? 1 : 0, bHide = b.resolved ? 1 : 0;
+    if (aHide !== bHide) return aHide - bHide;
+    return priorityScore(a) - priorityScore(b);
+  });
+}
+
+// ─── API calls ────────────────────────────────────────────────────────────────
+async function apiCall(endpoint, body, ms = 20000) {
+  const controller = new AbortController();
+  const timeout    = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(WORKER + endpoint, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+      signal:  controller.signal,
+    });
+    return await res.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// ─── Parse Slack API response ─────────────────────────────────────────────────
+function parseSlackMatches(matches, seen) {
+  for (const m of (matches || [])) {
+    const channel = m.channel?.name?.toLowerCase();
+    if (!channel || !TARGET_CHANNELS.has(channel)) continue;
+
+    const ts = m.ts;
+    if (!ts || seen.has(ts)) continue;
+
+    const rawText = m.text || '';
+
+    // Only accept messages STARTING with the emoji
+    const trimmed = rawText.trim();
+    const msgType = (() => {
+      if (trimmed.startsWith(':red_circle:')   || trimmed.startsWith('🔴')) return 'problem';
+      if (trimmed.startsWith(':rocket:')       || trimmed.startsWith('🚀')) return 'opportunity';
+      if (trimmed.startsWith(':raising_hand:') || trimmed.startsWith(':person_raising_hand:') || trimmed.startsWith('🙋')) return 'help';
+      return null;
+    })();
+    if (!msgType) continue;
+
+    // Skip thread replies
+    const permalink = m.permalink || null;
+    if (permalink) {
+      const threadMatch = permalink.match(/thread_ts=([\d.]+)/);
+      if (threadMatch && Math.abs(parseFloat(ts) - parseFloat(threadMatch[1])) > 1) continue;
+    }
+
+    const cleanedText = cleanSlackText(rawText);
+    if (cleanedText.length < 10) continue;
+
+    seen.add(ts);
+    allItems.push({
+      channel,
+      channelId:    m.channel?.id || null,
+      sender:       m.username || m.user_profile?.display_name || 'Unknown',
+      ts,
+      permalink,
+      text:         cleanedText,
+      roles:        detectRoles(cleanedText),
+      msgType,
+      msgId:        generateMsgId(channel, ts),
+      projectCount: null,
+      projects:     [],
+      threadStatus: 'unknown',
+      replyCount:   null,
+      threadReason: '',
+      resolved:     false,
+    });
+  }
+}
+
+// ─── Thread checks (keyword-based, no AI needed) ─────────────────────────────
+function updateThreadProgress(checked, total, resolved, unanswered, active, label) {
+  const panel = document.getElementById('thread-progress');
+  panel.classList.add('visible');
+  const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
+  document.getElementById('tp-bar').style.width   = pct + '%';
+  document.getElementById('tp-count').textContent = `${checked} / ${total}`;
+  document.getElementById('tp-current').textContent = label || '';
+  document.getElementById('tp-resolved').textContent  = resolved;
+  document.getElementById('tp-unanswered').textContent = unanswered;
+  document.getElementById('tp-active').textContent    = active;
+}
+
+async function checkThreads(items) {
+  const toCheck = items.filter(i => !i.resolved && i.channelId && i.ts);
+  if (!toCheck.length) return;
+
+  let checked = 0, resolved = 0, unanswered = 0, active = 0;
+  updateThreadProgress(0, toCheck.length, 0, 0, 0, 'Starting…');
+
+  for (const item of toCheck) {
+    updateThreadProgress(checked, toCheck.length, resolved, unanswered, active,
+      `#${item.channel} · ${item.sender}`);
+    try {
+      const data    = await apiCall('/slack-thread', { channel: item.channelId, ts: item.ts });
+      const messages = data.messages || [];
+      const replies  = messages.slice(1); // skip parent message
+      item.replyCount = replies.length;
+
+      if (replies.length === 0) {
+        const ageDays = (Date.now() - parseFloat(item.ts) * 1000) / 86400000;
+        item.threadStatus = ageDays > 3 ? 'unanswered' : 'new';
+        if (item.threadStatus === 'unanswered') unanswered++;
+      } else {
+        const replyText = replies.map(r => r.text || '').join(' ').toLowerCase();
+        const hit = RESOLVED_KW.find(kw => replyText.includes(kw.toLowerCase()));
+        if (hit) {
+          item.threadStatus = 'resolved';
+          item.threadReason = `"${hit}" found in replies`;
+          item.resolved     = true;
+          resolved++;
+        } else {
+          item.threadStatus = 'active';
+          active++;
+        }
+      }
+    } catch(e) {
+      console.warn('Thread check failed:', item.ts, e);
+    }
+    checked++;
+    if (checked % 3 === 0) { sortItems(); renderCards(); updateStats(); }
+  }
+
+  sortItems(); renderCards(); updateStats();
+
+  const panel = document.getElementById('thread-progress');
+  panel.querySelector('.spinner-sm').style.display = 'none';
+  panel.querySelector('.thread-progress-title').innerHTML =
+    `✅ Threads verified — ${resolved} resolved and hidden`;
+  document.getElementById('tp-current').textContent = '';
+  setTimeout(() => panel.classList.remove('visible'), 6000);
+}
+
+// ─── Smartsheet project counts ────────────────────────────────────────────────
+async function fetchProjectCounts(items) {
+  const valid = items.filter(i => i.msgId && !i.resolved);
+  const ids   = [...new Set(valid.map(i => i.msgId))];
+
+  for (const msgId of ids) {
+    try {
+      const data    = await apiCall('/smartsheet-search', { query: `"${msgId}"` });
+      const count   = data.totalCount || data.total || 0;
+      const projects = (data.results || [])
+        .map(r => ({ name: r.contextData || r.text || '', rowId: r.objectId }))
+        .filter(p => p.name);
+      valid.filter(i => i.msgId === msgId).forEach(item => {
+        item.projectCount = count;
+        item.projects     = projects;
+      });
+    } catch(e) {
+      valid.filter(i => i.msgId === msgId).forEach(item => { item.projectCount = 0; });
+    }
+  }
+  renderCards();
+}
+
+// ─── Card HTML ────────────────────────────────────────────────────────────────
+function threadBadge(item) {
+  switch (item.threadStatus) {
+    case 'unanswered': {
+      const d = Math.floor((Date.now() - parseFloat(item.ts) * 1000) / 86400000);
+      return `<span class="badge badge-unanswered">⏳ No response · ${d}d</span>`;
+    }
+    case 'active':
+      return `<span class="badge badge-active">💬 ${item.replyCount || ''} replies</span>`;
+    case 'new':
+      return `<span class="badge badge-active">🆕 New</span>`;
+    default: return '';
+  }
+}
+
+function projectBadge(item) {
+  if (item.projectCount == null) return '';
+  if (item.projectCount === 0)   return '';
+  const names   = (item.projects || []).map(p => p.name).filter(Boolean);
+  const tooltip = names.length ? names.join(' · ') : `${item.projectCount} project(s) submitted`;
+  return `<a href="${SMARTSHEET_SHEET_LINK}" target="_blank" class="badge badge-projects"
+              title="${tooltip}">📂 ${item.projectCount} project${item.projectCount !== 1 ? 's' : ''} ↗</a>`;
+}
+
+function submitBtn(item) {
+  const params = new URLSearchParams();
+  params.set('Slack Origin ID', item.msgId);
+  params.set('IdeaSource', 'Market Request');
+  const countryMap = { italia:'IT',france:'FR',spain:'ES',portugal:'PT',belgium:'BE',switzerland:'CH',noruega:'NO',cz_sk:'CZ',uk:'UK' };
+  const c = countryMap[item.channel];
+  if (c) params.set('Country', c);
+  const url = `${SMARTSHEET_FORM_URL}?${params.toString().replace(/\+/g, '%20')}`;
+  return `<a href="${url}" class="ss-btn" target="_blank">📋 Submit project</a>`;
+}
+
+function cardHTML(item, isResolved = false) {
+  const col  = CH_COLORS[item.channel] || '#007aff';
+  const mkt  = MARKET_DATA[item.channel];
+  const type = MSG_TYPES[item.msgType];
+
+  const typeBadge  = type ? `<span class="badge" style="background:${type.bg};color:${type.color};border:1px solid ${type.color}40">${type.emoji} ${type.label}</span>` : '';
+  const idBadge    = item.msgId ? `<span class="badge badge-id">#${item.msgId}</span>` : '';
+  const mktBadge   = !isResolved && mkt?.below ? `<span class="badge badge-below-target">🔴 ${mkt.pct}% of target</span>` : '';
+  const rankBadge  = !isResolved && mkt?.rank && mkt.rank < 100 ? `<span class="badge badge-rank">#${mkt.rank}</span>` : '';
+  const thrBadge   = isResolved ? `<span class="badge badge-resolved-thread">✅ Resolved${item.threadReason ? ' · ' + item.threadReason : ''}</span>` : threadBadge(item);
+
+  const excerpt = item.text.replace(/^[\s·\-–—🔴🚀🙋]+/, '').substring(0, 220) + (item.text.length > 220 ? '…' : '');
+
+  const roleChips = (item.roles || []).map(r => {
+    const cls = { 'Paid Media':'chip-paid','Design':'chip-design','Content':'chip-content',
+      'SEO':'chip-seo','CRO':'chip-cro','Analytics':'chip-analytics','Strategy':'chip-strategy' }[r] || 'chip-strategy';
+    const icon = { 'Paid Media':'📣','Design':'🎨','Content':'✍️','SEO':'🔍',
+      'CRO':'🧪','Analytics':'📊','Strategy':'📋' }[r] || '📋';
+    return `<span class="role-chip ${cls}">${icon} ${r}</span>`;
+  }).join('');
+
+  const isCritical = !isResolved && mkt?.below && item.threadStatus === 'unanswered';
+
+  return `
+    <div class="card${isCritical ? ' priority-critical' : ''}${isResolved ? ' resolved-card' : ''}">
+      <div class="card-inner" style="--ch-color:${isResolved ? '#34c759' : col}">
+        <div class="card-top">
+          <div class="card-meta">
+            ${typeBadge}
+            <span class="ch-pill" style="background:${col}18;color:${col}">#${item.channel}</span>
+            <span class="sender">👤 ${item.sender}</span>
+            ${idBadge} ${mktBadge} ${rankBadge}
+            ${projectBadge(item)}
+            ${thrBadge}
+          </div>
+          <span class="card-date">${formatDate(item.ts)}</span>
+        </div>
+        <div class="card-text">${excerpt}</div>
+        <div class="card-footer">
+          <div style="display:flex;gap:5px;flex-wrap:wrap">${roleChips}</div>
+          <div class="card-actions">
+            ${item.permalink ? `<a href="${item.permalink}" class="slack-link" target="_blank">View in Slack →</a>` : ''}
+            ${!isResolved ? submitBtn(item) : ''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function getFiltered() {
+  let items = allItems.filter(i => !i.resolved);
+  if (activeCh   !== 'all') items = items.filter(i => i.channel === activeCh);
+  if (activeType !== 'all') items = items.filter(i => i.msgType === activeType);
+  return items;
+}
+
+function renderCards() {
+  const wrap  = document.getElementById('cards-wrap');
+  const items = getFiltered();
+  const now   = Date.now();
+
+  const urgent = items.filter(i => MARKET_DATA[i.channel]?.below && (i.threadStatus === 'unanswered' || i.threadStatus === 'new'));
+  const urgentTs = new Set(urgent.map(i => i.ts));
+  const last30   = items.filter(i => !urgentTs.has(i.ts) && (now - parseFloat(i.ts) * 1000) < 30 * 86400000);
+  const older    = items.filter(i => !urgentTs.has(i.ts) && (now - parseFloat(i.ts) * 1000) >= 30 * 86400000);
+
+  let html = '<div class="cards">';
+  if (!items.length && !showResolved) {
+    html += '<div class="empty">No messages found with these filters.</div>';
+  } else {
+    if (urgent.length) { html += `<div class="section-header urgent">🚨 Urgent — Below target, no response (${urgent.length})</div>`; html += urgent.map(i => cardHTML(i)).join(''); }
+    if (last30.length) { html += `<div class="section-header">📌 Last 30 days (${last30.length})</div>`; html += last30.map(i => cardHTML(i)).join(''); }
+    if (older.length)  { html += `<div class="section-header">📂 Older (${older.length})</div>`;        html += older.map(i => cardHTML(i)).join(''); }
+  }
+  if (showResolved) {
+    const resolved = allItems.filter(i => i.resolved);
+    if (resolved.length) {
+      html += `<div class="section-header" style="color:#34c759">✅ Resolved — hidden from dashboard (${resolved.length})</div>`;
+      html += resolved.map(i => cardHTML(i, true)).join('');
+    }
+  }
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+function updateStats() {
+  const requests   = allItems.filter(i => !i.resolved);
+  const below      = new Set(requests.filter(i => MARKET_DATA[i.channel]?.below).map(i => i.channel)).size;
+  const unanswered = requests.filter(i => i.threadStatus === 'unanswered').length;
+  const resolved   = allItems.filter(i => i.resolved).length;
+  document.getElementById('s-total').textContent     = requests.length;
+  document.getElementById('s-below').textContent     = below;
+  document.getElementById('s-unanswered').textContent = unanswered;
+  document.getElementById('s-resolved').textContent  = resolved;
+  document.getElementById('stats-row').style.display     = 'flex';
+  document.getElementById('filters-wrap').style.display  = '';
+  document.getElementById('type-wrap').style.display     = '';
+  document.getElementById('resolved-count').textContent  = resolved;
+  document.getElementById('resolved-toggle-wrap').style.display = resolved > 0 ? '' : 'none';
+}
+
+function buildChannelFilters() {
+  const chs = [...new Set(allItems.map(i => i.channel))].sort();
+  const div = document.getElementById('channel-filters');
+  Array.from(div.querySelectorAll('[data-ch]:not([data-ch="all"])')).forEach(b => b.remove());
+  chs.forEach(ch => {
+    const col = CH_COLORS[ch] || '#007aff';
+    const mkt = MARKET_DATA[ch];
+    const btn = document.createElement('button');
+    btn.className = 'fbtn'; btn.dataset.ch = ch;
+    btn.style.borderColor = col + '50';
+    btn.onclick = function() { filterCh(ch, this); };
+    btn.innerHTML = `#${ch}${mkt?.below ? '<span class="below-dot"></span>' : ''}`;
+    div.appendChild(btn);
+  });
+}
+
+function filterCh(ch, btn) { activeCh = ch; document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderCards(); }
+function filterType(t, btn) { activeType = t; document.querySelectorAll('.tfbtn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderCards(); }
+function toggleResolved(btn) { showResolved = !showResolved; btn.classList.toggle('active', showResolved); renderCards(); }
+
+// ─── Main load ────────────────────────────────────────────────────────────────
+const SEARCHES = (() => {
+  const channels = [...TARGET_CHANNELS];
+  const types = [
+    { emoji: ':red_circle:',   type: 'problem' },
+    { emoji: ':rocket:',       type: 'opportunity' },
+    { emoji: ':raising_hand:', type: 'help' },
+  ];
+  return channels.flatMap(ch => types.map(t => ({ query: `${t.emoji} in:#${ch} after:2025-01-01`, type: t.type })));
+})();
+
+async function load() {
+  if (WORKER.includes('YOUR-WORKER')) {
+    document.getElementById('config-banner').classList.add('visible');
+    document.getElementById('loading').innerHTML = '<p style="color:#ff3b30;padding:40px">⚠️ Please set the WORKER URL in index.html</p>';
+    return;
+  }
+
+  const seen     = new Set();
+  const progMsg  = document.getElementById('prog-msg');
+  const progBar  = document.getElementById('prog-bar');
+  const foundLive = document.getElementById('found-live');
+
+  for (let i = 0; i < SEARCHES.length; i++) {
+    const { query } = SEARCHES[i];
+    progMsg.textContent = `Searching: ${query}`;
+    progBar.style.width = Math.round(((i + 1) / SEARCHES.length) * 100) + '%';
+
+    try {
+      const data = await apiCall('/slack-search', { query, count: 20 });
+      if (data.ok && data.messages?.matches) {
+        const before = allItems.length;
+        parseSlackMatches(data.messages.matches, seen);
+        if (allItems.length > before) foundLive.textContent = `${allItems.length} messages found…`;
+      }
+    } catch(e) {
+      console.warn('Search failed:', query, e.message);
+    }
+  }
+
+  sortItems();
+
+  document.getElementById('loading').style.display   = 'none';
+  document.getElementById('main-wrap').style.display = '';
+  buildChannelFilters();
+  updateStats();
+  renderCards();
+
+  const now = new Date();
+  document.getElementById('updated-time').textContent =
+    'Updated ' + now.toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+
+  // Run thread checks and Smartsheet counts in parallel
+  if (allItems.length > 0) {
+    fetchProjectCounts(allItems);
+    checkThreads(allItems.filter(i => !i.resolved));
+  }
+}
+
+load();
+</script>
+</body>
+</html>

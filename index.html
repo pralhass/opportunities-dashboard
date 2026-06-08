@@ -341,13 +341,9 @@ function parseSlackMatches(matches, seen) {
 
     // Only accept messages STARTING with the emoji
     const trimmed = rawText.trim();
-    const msgType = (() => {
-      if (trimmed.startsWith(':red_circle:')   || trimmed.startsWith('🔴')) return 'problem';
-      if (trimmed.startsWith(':rocket:')       || trimmed.startsWith('🚀')) return 'opportunity';
-      if (trimmed.startsWith(':raising_hand:') || trimmed.startsWith(':person_raising_hand:') || trimmed.startsWith('🙋')) return 'help';
-      return null;
-    })();
-    if (!msgType) continue;
+    // Only accept messages starting with 🔴
+    if (!trimmed.startsWith(':red_circle:') && !trimmed.startsWith('🔴')) continue;
+    const msgType = 'request';
 
     // Skip thread replies
     const permalink = m.permalink || null;
@@ -624,15 +620,11 @@ function filterType(t, btn) { activeType = t; document.querySelectorAll('.tfbtn'
 function toggleResolved(btn) { showResolved = !showResolved; btn.classList.toggle('active', showResolved); renderCards(); }
 
 // ─── Main load ────────────────────────────────────────────────────────────────
-const SEARCHES = (() => {
-  const channels = [...TARGET_CHANNELS];
-  const types = [
-    { emoji: ':red_circle:',   type: 'problem' },
-    { emoji: ':rocket:',       type: 'opportunity' },
-    { emoji: ':raising_hand:', type: 'help' },
-  ];
-  return channels.flatMap(ch => types.map(t => ({ query: `${t.emoji} in:#${ch} after:2025-01-01`, type: t.type })));
-})();
+// Single emoji 🔴 only — one search per channel
+const SEARCHES = [...TARGET_CHANNELS].map(ch => ({
+  query: `:red_circle: in:#${ch} after:2025-01-01`,
+  type: 'request'
+}));
 
 async function load() {
   if (WORKER.includes('YOUR-WORKER')) {

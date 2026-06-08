@@ -216,10 +216,7 @@ const RESOLVED_KW = [
   'already done','already added','already submitted',
 ];
 
-// Single emoji — one search per channel
-const SEARCHES = [...TARGET_CHANNELS].map(ch => ({
-  query: `:red_circle: in:#${ch} after:2025-01-01`,
-}));
+// Channels are fetched dynamically via conversations.list + conversations.history
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let allItems    = [];
@@ -306,44 +303,37 @@ async function apiCall(endpoint, body, ms = 20000) {
   }
 }
 
-// ─── Parse Slack search response ─────────────────────────────────────────────
-function parseSlackMatches(matches, seen) {
-  for (const m of (matches || [])) {
-    const channel = m.channel?.name?.toLowerCase();
-    if (!channel || !TARGET_CHANNELS.has(channel)) continue;
-
+// ─── Parse conversations.history messages ─────────────────────────────────────
+function parseSlackMessages(messages, channelName, channelId, seen) {
+  for (const m of (messages || [])) {
     const ts = m.ts;
     if (!ts || seen.has(ts)) continue;
 
-    const rawText = m.text || '';
-    const trimmed = rawText.trim();
+    // Skip thread replies (thread_ts exists and differs from ts)
+    if (m.thread_ts && Math.abs(parseFloat(ts) - parseFloat(m.thread_ts)) > 1) continue;
+
+    const rawText = (m.text || '').trim();
 
     // Only accept messages STARTING with 🔴
-    if (!trimmed.startsWith(':red_circle:') && !trimmed.startsWith('🔴')) continue;
-
-    // Skip thread replies
-    const permalink = m.permalink || null;
-    if (permalink) {
-      const tm = permalink.match(/thread_ts=([\d.]+)/);
-      if (tm && Math.abs(parseFloat(ts) - parseFloat(tm[1])) > 1) continue;
-    }
+    if (!rawText.startsWith(':red_circle:') && !rawText.startsWith('🔴')) continue;
 
     const cleanedText = cleanSlackText(rawText);
     if (cleanedText.length < 10) continue;
 
     seen.add(ts);
     allItems.push({
-      channel,
-      channelId:    m.channel?.id || null,
-      sender:       m.username || m.user_profile?.display_name || 'Unknown',
-      ts, permalink,
+      channel:      channelName,
+      channelId:    channelId,
+      sender:       m.user || 'Unknown',
+      ts,
+      permalink:    null, // not available from history; built below
       text:         cleanedText,
       roles:        detectRoles(cleanedText),
-      msgId:        generateMsgId(channel, ts),
+      msgId:        generateMsgId(channelName, ts),
       projectCount: null,
       projects:     [],
       threadStatus: 'unknown',
-      replyCount:   null,
+      replyCount:   m.reply_count || 0,
       threadReason: '',
       resolved:     false,
     });
@@ -577,21 +567,51 @@ async function load() {
   const progBar   = document.getElementById('prog-bar');
   const foundLive = document.getElementById('found-live');
 
-  for (let i = 0; i < SEARCHES.length; i++) {
-    const { query } = SEARCHES[i];
-    progMsg.textContent = `Searching: ${query}`;
-    progBar.style.width = Math.round(((i+1)/SEARCHES.length)*100)+'%';
+  // Step 1: Get all channels the bot is in
+  progMsg.textContent = 'Getting channel list…';
+  let channelMap = {}; // name → id
+  try {
+    const data = await apiCall('/slack-channels', {});
+    if (data.ok && data.channels) {
+      data.channels.forEach(ch => {
+        if (TARGET_CHANNELS.has(ch.name)) channelMap[ch.name] = ch.id;
+      });
+      console.log('Bot is in channels:', Object.keys(channelMap));
+    } else {
+      console.error('channels.list error:', data.error);
+      progMsg.textContent = `⚠️ Error: ${data.error} — make sure the bot is added to the channels`;
+    }
+  } catch(e) {
+    console.error('Failed to get channels:', e.message);
+  }
+
+  const channels = Object.entries(channelMap); // [[name, id], ...]
+  if (channels.length === 0) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main-wrap').style.display = '';
+    document.getElementById('cards-wrap').innerHTML =
+      '<div class="empty">⚠️ Bot is not in any target channel.<br><small>Add the bot to each channel with <code>/invite @YourBot</code></small></div>';
+    document.getElementById('stats-row').style.display = 'flex';
+    document.getElementById('updated-time').textContent = 'Updated ' + new Date().toLocaleString('en-GB', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    return;
+  }
+
+  // Step 2: Read history from each channel and filter for 🔴
+  const OLDEST = '1735689600'; // 2025-01-01
+  for (let i = 0; i < channels.length; i++) {
+    const [chName, chId] = channels[i];
+    progMsg.textContent = `Reading #${chName}…`;
+    progBar.style.width = Math.round(((i+1)/channels.length)*100)+'%';
     try {
-      const data = await apiCall('/slack-search', { query, count: 20 });
-      console.log(`[${query}]`, 'ok:', data.ok, 'error:', data.error, 'matches:', data.messages?.matches?.length ?? 'none');
-      if (data.ok && data.messages?.matches) {
+      const data = await apiCall('/slack-history', { channel_id: chId, oldest: OLDEST, limit: 200 });
+      if (data.ok && data.messages) {
         const before = allItems.length;
-        parseSlackMatches(data.messages.matches, seen);
-        if (allItems.length > before) foundLive.textContent = `${allItems.length} messages found…`;
-      } else if (!data.ok) {
-        console.error(`Slack error for [${query}]:`, data.error, data);
+        parseSlackMessages(data.messages, chName, chId, seen);
+        if (allItems.length > before) foundLive.textContent = `${allItems.length} requests found…`;
+      } else {
+        console.warn(`#${chName}:`, data.error);
       }
-    } catch(e) { console.error('Search failed:', query, e.message); }
+    } catch(e) { console.warn(`#${chName} failed:`, e.message); }
   }
 
   sortItems();

@@ -169,7 +169,7 @@
 
 <script>
 // ─── ⚙️  SET YOUR CLOUDFLARE WORKER URL HERE ─────────────────────────────────
-const WORKER = 'https://opportunities-proxy.paulo-ralha.workers.dev';
+const WORKER = 'https:opportunities-proxy.paulo-ralha.workers.dev';
 
 // Market data — update when target data changes
 // Last updated: 2026-06-08
@@ -583,12 +583,15 @@ async function load() {
     progBar.style.width = Math.round(((i+1)/SEARCHES.length)*100)+'%';
     try {
       const data = await apiCall('/slack-search', { query, count: 20 });
+      console.log(`[${query}]`, 'ok:', data.ok, 'error:', data.error, 'matches:', data.messages?.matches?.length ?? 'none');
       if (data.ok && data.messages?.matches) {
         const before = allItems.length;
         parseSlackMatches(data.messages.matches, seen);
         if (allItems.length > before) foundLive.textContent = `${allItems.length} messages found…`;
+      } else if (!data.ok) {
+        console.error(`Slack error for [${query}]:`, data.error, data);
       }
-    } catch(e) { console.warn('Search failed:', query, e.message); }
+    } catch(e) { console.error('Search failed:', query, e.message); }
   }
 
   sortItems();

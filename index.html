@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Opportunities & Requests</title>
 <style>
-  /* ─── REPLACE THIS WITH YOUR CLOUDFLARE WORKER URL ──────────────────────── */
-  /* See WORKER constant in the <script> below                                  */
-
   :root { color-scheme: light; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f2f2f7; color: #1c1c1e; min-height: 100vh; }
@@ -36,12 +33,6 @@
   .fbtn.active { background: #007aff; border-color: #007aff; color: #fff; }
   .fbtn .below-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ff3b30; margin-left: 4px; vertical-align: middle; }
 
-  .type-wrap { padding: 6px 16px 10px; }
-  .type-row  { display: flex; gap: 6px; flex-wrap: wrap; }
-  .tfbtn { padding: 4px 11px; border-radius: 20px; border: 1.5px solid #e5e5ea; background: #fff; font-size: 12px; font-weight: 500; cursor: pointer; color: #3a3a3c; transition: all 0.15s; white-space: nowrap; }
-  .tfbtn:hover  { border-color: #555; }
-  .tfbtn.active { color: #fff; border-color: transparent; background: #1c1c1e; }
-
   .resolved-toggle-wrap { padding: 4px 16px 10px; }
   .resolved-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; border: 1.5px solid #e5e5ea; background: #fff; font-size: 12px; font-weight: 500; cursor: pointer; color: #636366; transition: all 0.15s; }
   .resolved-toggle:hover { border-color: #34c759; color: #1a6b1a; }
@@ -57,7 +48,6 @@
   .prog-bar     { height: 4px; background: #007aff; border-radius: 4px; transition: width 0.4s; width: 0%; }
   .found-live   { font-size: 12px; color: #34c759; font-weight: 600; margin-top: 8px; min-height: 18px; }
 
-  /* Thread progress */
   .thread-progress { background: #fff; border: 1px solid #e5e5ea; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: none; }
   .thread-progress.visible { display: block; }
   .thread-progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -72,7 +62,6 @@
   .thread-stat span { font-weight: 700; color: #3a3a3c; }
   .thread-stat.resolved span { color: #34c759; }
 
-  /* Cards */
   .cards { display: flex; flex-direction: column; gap: 10px; }
   .section-header { font-size: 11px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; }
   .section-header.urgent { color: #ff3b30; }
@@ -80,7 +69,6 @@
   .card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.08); }
   .card.priority-critical { border-color: #ff3b3040; }
   .card.resolved-card { opacity: 0.55; }
-  .card.resolved-card .card-summary { text-decoration: line-through; color: #8e8e93; }
   .card-inner { padding: 14px 16px 12px; border-left: 4px solid var(--ch-color, #e5e5ea); }
   .card-top  { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
   .card-meta { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; min-width: 0; }
@@ -99,15 +87,21 @@
   .card-text { font-size: 13px; color: #48484a; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 12px; background: #f9f9fb; border-radius: 8px; padding: 8px 10px; }
   .card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .card-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .role-chip { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+  .chip-paid      { background: #e8f3ff; color: #007aff; }
+  .chip-design    { background: #f3e8ff; color: #af52de; }
+  .chip-content   { background: #fff3e0; color: #cc7700; }
+  .chip-seo       { background: #e8fff0; color: #1a8a3a; }
+  .chip-cro       { background: #ffe8ec; color: #cc1a2e; }
+  .chip-analytics { background: #eeecff; color: #4a48c0; }
+  .chip-strategy  { background: #f2f2f7; color: #636366; }
   .slack-link { font-size: 12px; color: #007aff; text-decoration: none; font-weight: 600; padding: 5px 12px; border-radius: 20px; background: #e8f3ff; transition: all 0.15s; white-space: nowrap; }
   .slack-link:hover { background: #007aff; color: #fff; }
   .ss-btn { font-size: 12px; color: #1c6b3a; text-decoration: none; font-weight: 600; padding: 5px 12px; border-radius: 20px; background: #e8ffe8; border: 1.5px solid #b3e6b3; transition: all 0.15s; white-space: nowrap; cursor: pointer; }
   .ss-btn:hover { background: #34c759; color: #fff; border-color: #34c759; }
   .empty { text-align: center; padding: 50px 20px; color: #8e8e93; font-size: 14px; }
-
   .config-banner { background: #fff8e0; border: 1px solid #ffcc00; border-radius: 10px; padding: 10px 14px; margin: 12px 16px; font-size: 12px; color: #7a5c00; display: none; }
   .config-banner.visible { display: block; }
-  .config-banner strong { font-weight: 700; }
 </style>
 </head>
 <body>
@@ -124,7 +118,7 @@
 </div>
 
 <div id="config-banner" class="config-banner">
-  ⚠️ <strong>Setup required:</strong> Open this file and set the <code>WORKER</code> constant to your Cloudflare Worker URL.
+  ⚠️ <strong>Setup required:</strong> open <code>index.html</code> and set the <code>WORKER</code> constant to your Cloudflare Worker URL.
 </div>
 
 <div id="stats-row" class="stats-row" style="display:none">
@@ -138,16 +132,6 @@
   <div class="filters-label">Channel</div>
   <div class="filters" id="channel-filters">
     <button class="fbtn active" data-ch="all" onclick="filterCh('all',this)">All</button>
-  </div>
-</div>
-
-<div id="type-wrap" class="type-wrap" style="display:none">
-  <div class="filters-label">Type</div>
-  <div class="type-row">
-    <button class="tfbtn active" data-type="all" onclick="filterType('all',this)">All</button>
-    <button class="tfbtn" data-type="problem"     onclick="filterType('problem',this)">🔴 Problem</button>
-    <button class="tfbtn" data-type="opportunity" onclick="filterType('opportunity',this)">🚀 Opportunity</button>
-    <button class="tfbtn" data-type="help"        onclick="filterType('help',this)">🙋 Help requestsssss</button>
   </div>
 </div>
 
@@ -184,11 +168,11 @@
 </div>
 
 <script>
-// ─── ⚙️  CONFIGURATION — edit these two values ────────────────────────────────
-const WORKER = 'https://opportunities-proxy.paulo-ralha.workers.dev/'; // Cloudflare Worker URL
+// ─── ⚙️  SET YOUR CLOUDFLARE WORKER URL HERE ─────────────────────────────────
+const WORKER = 'https://opportunities-proxy.paulo-ralha.workers.dev';
 
-// Market data — updated automatically by the daily scheduled task in Cowork
-// Last updated: 2026-06-05
+// Market data — update when target data changes
+// Last updated: 2026-06-08
 const MARKET_DATA = {
   'italia':      { rank: 1, pct: 71,  below: true  },
   'france':      { rank: 2, pct: 80,  below: true  },
@@ -212,12 +196,6 @@ const TARGET_CHANNELS = new Set([
   'cz_sk','distribution','noruega','switzerland','team'
 ]);
 
-const MSG_TYPES = {
-  problem:     { emoji: '🔴', label: 'Problem',      color: '#ff3b30', bg: '#fff0f0' },
-  opportunity: { emoji: '🚀', label: 'Opportunity',  color: '#5856d6', bg: '#f0f0ff' },
-  help:        { emoji: '🙋', label: 'Help request', color: '#ff9500', bg: '#fff8e0' },
-};
-
 const CH_COLORS = {
   'dashboar-mensagens':'#34c759', portugal:'#ff3b30', belgium:'#ff9500',
   uk:'#34c759', france:'#007aff', spain:'#af52de', italia:'#5ac8fa',
@@ -238,10 +216,14 @@ const RESOLVED_KW = [
   'already done','already added','already submitted',
 ];
 
+// Single emoji — one search per channel
+const SEARCHES = [...TARGET_CHANNELS].map(ch => ({
+  query: `:red_circle: in:#${ch} after:2025-01-01`,
+}));
+
 // ─── State ────────────────────────────────────────────────────────────────────
 let allItems    = [];
 let activeCh    = 'all';
-let activeType  = 'all';
 let showResolved = false;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -273,12 +255,10 @@ function cleanSlackText(text) {
   t = t.replace(/<https?:\/\/[^|>]+\|([^>]+)>/g, '[$1]').replace(/<https?:\/\/[^\s>]+>/g, '');
   t = t.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
   t = t.replace(/:([a-z0-9_\-]+):/g, (m, name) => {
-    const map = { red_circle:'🔴', rocket:'🚀', raising_hand:'🙋', person_raising_hand:'🙋',
-      white_check_mark:'✅', x:'❌', warning:'⚠️', thumbsup:'👍', fire:'🔥' };
+    const map = { red_circle:'🔴', white_check_mark:'✅', x:'❌', warning:'⚠️', thumbsup:'👍', fire:'🔥' };
     return map[name] || '';
   });
-  t = t.replace(/\s{2,}/g, ' ').trim();
-  return t;
+  return t.replace(/\s{2,}/g, ' ').trim();
 }
 
 function detectRoles(text) {
@@ -286,41 +266,39 @@ function detectRoles(text) {
   const roles = [];
   const has = (...w) => w.some(x => t.includes(x));
   if (has('meta','facebook','google ads','bing','tiktok','paid','cpa','cpc','roas','campaign','budget','spend','pmax')) roles.push('Paid Media');
-  if (has('creative','refresh','design','visual','banner','layout','artwork','video','foto')) roles.push('Design');
+  if (has('creative','refresh','design','visual','banner','layout','artwork','video')) roles.push('Design');
   if (has('copy','content','headline','script','email','text','angle','hook','messaging')) roles.push('Content');
-  if (has('seo','organic','ranking','local page','google my business','keyword','backlink')) roles.push('SEO');
+  if (has('seo','organic','ranking','local page','keyword','backlink')) roles.push('SEO');
   if (has('a/b','ab test','cro','landing page','conversion rate','cvr','ux','hypothesis')) roles.push('CRO');
-  if (has('analytics','dashboard','report','metric','kpi','data','tracking','attribution','insight','performance')) roles.push('Analytics');
+  if (has('analytics','dashboard','report','metric','kpi','data','tracking','attribution','performance')) roles.push('Analytics');
   if (has('backlog','sprint','project','priorit','strategy','roadmap','plan','decision','meeting','checkpoint')) roles.push('Strategy');
   return roles.length > 0 ? roles.slice(0, 3) : ['Strategy'];
 }
 
 function priorityScore(item) {
-  const m   = MARKET_DATA[item.channel];
-  const rank = m ? m.rank : 500;
-  const boost = m?.below ? -1000 : 0;
-  const noReply = item.threadStatus === 'unanswered' ? -50 : 0;
-  return rank * 10 + boost + noReply;
+  const m = MARKET_DATA[item.channel];
+  return (m ? m.rank : 500) * 10 + (m?.below ? -1000 : 0) + (item.threadStatus === 'unanswered' ? -50 : 0);
 }
 
 function sortItems() {
   allItems.sort((a, b) => {
-    const aHide = a.resolved ? 1 : 0, bHide = b.resolved ? 1 : 0;
-    if (aHide !== bHide) return aHide - bHide;
+    const aH = a.resolved ? 1 : 0, bH = b.resolved ? 1 : 0;
+    if (aH !== bH) return aH - bH;
     return priorityScore(a) - priorityScore(b);
   });
 }
 
-// ─── API calls ────────────────────────────────────────────────────────────────
+// ─── API ──────────────────────────────────────────────────────────────────────
 async function apiCall(endpoint, body, ms = 20000) {
   const controller = new AbortController();
   const timeout    = setTimeout(() => controller.abort(), ms);
+  const base       = WORKER.replace(/\/+$/, ''); // remove trailing slash
   try {
-    const res = await fetch(WORKER + endpoint, {
-      method:  'POST',
+    const res = await fetch(base + endpoint, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(body),
-      signal:  controller.signal,
+      body: JSON.stringify(body),
+      signal: controller.signal,
     });
     return await res.json();
   } finally {
@@ -328,7 +306,7 @@ async function apiCall(endpoint, body, ms = 20000) {
   }
 }
 
-// ─── Parse Slack API response ─────────────────────────────────────────────────
+// ─── Parse Slack search response ─────────────────────────────────────────────
 function parseSlackMatches(matches, seen) {
   for (const m of (matches || [])) {
     const channel = m.channel?.name?.toLowerCase();
@@ -338,18 +316,16 @@ function parseSlackMatches(matches, seen) {
     if (!ts || seen.has(ts)) continue;
 
     const rawText = m.text || '';
-
-    // Only accept messages STARTING with the emoji
     const trimmed = rawText.trim();
-    // Only accept messages starting with 🔴
+
+    // Only accept messages STARTING with 🔴
     if (!trimmed.startsWith(':red_circle:') && !trimmed.startsWith('🔴')) continue;
-    const msgType = 'request';
 
     // Skip thread replies
     const permalink = m.permalink || null;
     if (permalink) {
-      const threadMatch = permalink.match(/thread_ts=([\d.]+)/);
-      if (threadMatch && Math.abs(parseFloat(ts) - parseFloat(threadMatch[1])) > 1) continue;
+      const tm = permalink.match(/thread_ts=([\d.]+)/);
+      if (tm && Math.abs(parseFloat(ts) - parseFloat(tm[1])) > 1) continue;
     }
 
     const cleanedText = cleanSlackText(rawText);
@@ -360,11 +336,9 @@ function parseSlackMatches(matches, seen) {
       channel,
       channelId:    m.channel?.id || null,
       sender:       m.username || m.user_profile?.display_name || 'Unknown',
-      ts,
-      permalink,
+      ts, permalink,
       text:         cleanedText,
       roles:        detectRoles(cleanedText),
-      msgType,
       msgId:        generateMsgId(channel, ts),
       projectCount: null,
       projects:     [],
@@ -376,17 +350,17 @@ function parseSlackMatches(matches, seen) {
   }
 }
 
-// ─── Thread checks (keyword-based, no AI needed) ─────────────────────────────
+// ─── Thread checks ────────────────────────────────────────────────────────────
 function updateThreadProgress(checked, total, resolved, unanswered, active, label) {
   const panel = document.getElementById('thread-progress');
   panel.classList.add('visible');
   const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
-  document.getElementById('tp-bar').style.width   = pct + '%';
-  document.getElementById('tp-count').textContent = `${checked} / ${total}`;
+  document.getElementById('tp-bar').style.width    = pct + '%';
+  document.getElementById('tp-count').textContent  = `${checked} / ${total}`;
   document.getElementById('tp-current').textContent = label || '';
-  document.getElementById('tp-resolved').textContent  = resolved;
+  document.getElementById('tp-resolved').textContent   = resolved;
   document.getElementById('tp-unanswered').textContent = unanswered;
-  document.getElementById('tp-active').textContent    = active;
+  document.getElementById('tp-active').textContent     = active;
 }
 
 async function checkThreads(items) {
@@ -397,12 +371,11 @@ async function checkThreads(items) {
   updateThreadProgress(0, toCheck.length, 0, 0, 0, 'Starting…');
 
   for (const item of toCheck) {
-    updateThreadProgress(checked, toCheck.length, resolved, unanswered, active,
-      `#${item.channel} · ${item.sender}`);
+    updateThreadProgress(checked, toCheck.length, resolved, unanswered, active, `#${item.channel} · ${item.sender}`);
     try {
       const data    = await apiCall('/slack-thread', { channel: item.channelId, ts: item.ts });
-      const messages = data.messages || [];
-      const replies  = messages.slice(1); // skip parent message
+      const msgs    = data.messages || [];
+      const replies = msgs.slice(1);
       item.replyCount = replies.length;
 
       if (replies.length === 0) {
@@ -422,35 +395,29 @@ async function checkThreads(items) {
           active++;
         }
       }
-    } catch(e) {
-      console.warn('Thread check failed:', item.ts, e);
-    }
+    } catch(e) { console.warn('Thread check failed:', e); }
     checked++;
     if (checked % 3 === 0) { sortItems(); renderCards(); updateStats(); }
   }
 
   sortItems(); renderCards(); updateStats();
-
   const panel = document.getElementById('thread-progress');
   panel.querySelector('.spinner-sm').style.display = 'none';
-  panel.querySelector('.thread-progress-title').innerHTML =
-    `✅ Threads verified — ${resolved} resolved and hidden`;
+  panel.querySelector('.thread-progress-title').innerHTML = `✅ Threads verified — ${resolved} resolved`;
   document.getElementById('tp-current').textContent = '';
   setTimeout(() => panel.classList.remove('visible'), 6000);
 }
 
-// ─── Smartsheet project counts ────────────────────────────────────────────────
+// ─── Smartsheet counts ────────────────────────────────────────────────────────
 async function fetchProjectCounts(items) {
   const valid = items.filter(i => i.msgId && !i.resolved);
   const ids   = [...new Set(valid.map(i => i.msgId))];
 
   for (const msgId of ids) {
     try {
-      const data    = await apiCall('/smartsheet-search', { query: `"${msgId}"` });
-      const count   = data.totalCount || data.total || 0;
-      const projects = (data.results || [])
-        .map(r => ({ name: r.contextData || r.text || '', rowId: r.objectId }))
-        .filter(p => p.name);
+      const data  = await apiCall('/smartsheet-search', { query: `"${msgId}"` });
+      const count = data.totalCount || data.total || 0;
+      const projects = (data.results || []).map(r => ({ name: r.contextData || r.text || '' })).filter(p => p.name);
       valid.filter(i => i.msgId === msgId).forEach(item => {
         item.projectCount = count;
         item.projects     = projects;
@@ -465,25 +432,17 @@ async function fetchProjectCounts(items) {
 // ─── Card HTML ────────────────────────────────────────────────────────────────
 function threadBadge(item) {
   switch (item.threadStatus) {
-    case 'unanswered': {
-      const d = Math.floor((Date.now() - parseFloat(item.ts) * 1000) / 86400000);
-      return `<span class="badge badge-unanswered">⏳ No response · ${d}d</span>`;
-    }
-    case 'active':
-      return `<span class="badge badge-active">💬 ${item.replyCount || ''} replies</span>`;
-    case 'new':
-      return `<span class="badge badge-active">🆕 New</span>`;
-    default: return '';
+    case 'unanswered': { const d = Math.floor((Date.now() - parseFloat(item.ts)*1000)/86400000); return `<span class="badge badge-unanswered">⏳ No response · ${d}d</span>`; }
+    case 'active':  return `<span class="badge badge-active">💬 ${item.replyCount || ''} replies</span>`;
+    case 'new':     return `<span class="badge badge-active">🆕 New</span>`;
+    default:        return '';
   }
 }
 
 function projectBadge(item) {
-  if (item.projectCount == null) return '';
-  if (item.projectCount === 0)   return '';
-  const names   = (item.projects || []).map(p => p.name).filter(Boolean);
-  const tooltip = names.length ? names.join(' · ') : `${item.projectCount} project(s) submitted`;
-  return `<a href="${SMARTSHEET_SHEET_LINK}" target="_blank" class="badge badge-projects"
-              title="${tooltip}">📂 ${item.projectCount} project${item.projectCount !== 1 ? 's' : ''} ↗</a>`;
+  if (!item.projectCount) return '';
+  const tooltip = (item.projects || []).map(p => p.name).filter(Boolean).join(' · ') || `${item.projectCount} project(s)`;
+  return `<a href="${SMARTSHEET_SHEET_LINK}" target="_blank" class="badge badge-projects" title="${tooltip}">📂 ${item.projectCount} project${item.projectCount !== 1 ? 's' : ''} ↗</a>`;
 }
 
 function submitBtn(item) {
@@ -493,44 +452,36 @@ function submitBtn(item) {
   const countryMap = { italia:'IT',france:'FR',spain:'ES',portugal:'PT',belgium:'BE',switzerland:'CH',noruega:'NO',cz_sk:'CZ',uk:'UK' };
   const c = countryMap[item.channel];
   if (c) params.set('Country', c);
-  const url = `${SMARTSHEET_FORM_URL}?${params.toString().replace(/\+/g, '%20')}`;
-  return `<a href="${url}" class="ss-btn" target="_blank">📋 Submit project</a>`;
+  return `<a href="${SMARTSHEET_FORM_URL}?${params.toString().replace(/\+/g,'%20')}" class="ss-btn" target="_blank">📋 Submit project</a>`;
 }
 
 function cardHTML(item, isResolved = false) {
-  const col  = CH_COLORS[item.channel] || '#007aff';
-  const mkt  = MARKET_DATA[item.channel];
-  const type = MSG_TYPES[item.msgType];
+  const col = CH_COLORS[item.channel] || '#007aff';
+  const mkt = MARKET_DATA[item.channel];
 
-  const typeBadge  = type ? `<span class="badge" style="background:${type.bg};color:${type.color};border:1px solid ${type.color}40">${type.emoji} ${type.label}</span>` : '';
-  const idBadge    = item.msgId ? `<span class="badge badge-id">#${item.msgId}</span>` : '';
-  const mktBadge   = !isResolved && mkt?.below ? `<span class="badge badge-below-target">🔴 ${mkt.pct}% of target</span>` : '';
-  const rankBadge  = !isResolved && mkt?.rank && mkt.rank < 100 ? `<span class="badge badge-rank">#${mkt.rank}</span>` : '';
-  const thrBadge   = isResolved ? `<span class="badge badge-resolved-thread">✅ Resolved${item.threadReason ? ' · ' + item.threadReason : ''}</span>` : threadBadge(item);
+  const mktBadge  = !isResolved && mkt?.below ? `<span class="badge badge-below-target">🔴 ${mkt.pct}% of target</span>` : '';
+  const rankBadge = !isResolved && mkt?.rank && mkt.rank < 100 ? `<span class="badge badge-rank">#${mkt.rank}</span>` : '';
+  const idBadge   = item.msgId ? `<span class="badge badge-id">#${item.msgId}</span>` : '';
+  const resBadge  = isResolved ? `<span class="badge badge-resolved-thread">✅ Resolved${item.threadReason ? ' · '+item.threadReason : ''}</span>` : threadBadge(item);
 
-  const excerpt = item.text.replace(/^[\s·\-–—🔴🚀🙋]+/, '').substring(0, 220) + (item.text.length > 220 ? '…' : '');
+  const excerpt = item.text.replace(/^[\s🔴:red_circle:]+/, '').substring(0, 220) + (item.text.length > 220 ? '…' : '');
 
   const roleChips = (item.roles || []).map(r => {
-    const cls = { 'Paid Media':'chip-paid','Design':'chip-design','Content':'chip-content',
-      'SEO':'chip-seo','CRO':'chip-cro','Analytics':'chip-analytics','Strategy':'chip-strategy' }[r] || 'chip-strategy';
-    const icon = { 'Paid Media':'📣','Design':'🎨','Content':'✍️','SEO':'🔍',
-      'CRO':'🧪','Analytics':'📊','Strategy':'📋' }[r] || '📋';
+    const cls = {'Paid Media':'chip-paid','Design':'chip-design','Content':'chip-content','SEO':'chip-seo','CRO':'chip-cro','Analytics':'chip-analytics','Strategy':'chip-strategy'}[r]||'chip-strategy';
+    const icon = {'Paid Media':'📣','Design':'🎨','Content':'✍️','SEO':'🔍','CRO':'🧪','Analytics':'📊','Strategy':'📋'}[r]||'📋';
     return `<span class="role-chip ${cls}">${icon} ${r}</span>`;
   }).join('');
 
   const isCritical = !isResolved && mkt?.below && item.threadStatus === 'unanswered';
 
   return `
-    <div class="card${isCritical ? ' priority-critical' : ''}${isResolved ? ' resolved-card' : ''}">
-      <div class="card-inner" style="--ch-color:${isResolved ? '#34c759' : col}">
+    <div class="card${isCritical?' priority-critical':''}${isResolved?' resolved-card':''}">
+      <div class="card-inner" style="--ch-color:${isResolved?'#34c759':col}">
         <div class="card-top">
           <div class="card-meta">
-            ${typeBadge}
             <span class="ch-pill" style="background:${col}18;color:${col}">#${item.channel}</span>
             <span class="sender">👤 ${item.sender}</span>
-            ${idBadge} ${mktBadge} ${rankBadge}
-            ${projectBadge(item)}
-            ${thrBadge}
+            ${idBadge} ${mktBadge} ${rankBadge} ${projectBadge(item)} ${resBadge}
           </div>
           <span class="card-date">${formatDate(item.ts)}</span>
         </div>
@@ -549,8 +500,7 @@ function cardHTML(item, isResolved = false) {
 // ─── Render ───────────────────────────────────────────────────────────────────
 function getFiltered() {
   let items = allItems.filter(i => !i.resolved);
-  if (activeCh   !== 'all') items = items.filter(i => i.channel === activeCh);
-  if (activeType !== 'all') items = items.filter(i => i.msgType === activeType);
+  if (activeCh !== 'all') items = items.filter(i => i.channel === activeCh);
   return items;
 }
 
@@ -559,90 +509,78 @@ function renderCards() {
   const items = getFiltered();
   const now   = Date.now();
 
-  const urgent = items.filter(i => MARKET_DATA[i.channel]?.below && (i.threadStatus === 'unanswered' || i.threadStatus === 'new'));
+  const urgent = items.filter(i => MARKET_DATA[i.channel]?.below && (i.threadStatus==='unanswered'||i.threadStatus==='new'));
   const urgentTs = new Set(urgent.map(i => i.ts));
-  const last30   = items.filter(i => !urgentTs.has(i.ts) && (now - parseFloat(i.ts) * 1000) < 30 * 86400000);
-  const older    = items.filter(i => !urgentTs.has(i.ts) && (now - parseFloat(i.ts) * 1000) >= 30 * 86400000);
+  const last30   = items.filter(i => !urgentTs.has(i.ts) && (now-parseFloat(i.ts)*1000) < 30*86400000);
+  const older    = items.filter(i => !urgentTs.has(i.ts) && (now-parseFloat(i.ts)*1000) >= 30*86400000);
 
   let html = '<div class="cards">';
   if (!items.length && !showResolved) {
-    html += '<div class="empty">No messages found with these filters.</div>';
+    html += '<div class="empty">No messages found. Make sure messages start with 🔴</div>';
   } else {
-    if (urgent.length) { html += `<div class="section-header urgent">🚨 Urgent — Below target, no response (${urgent.length})</div>`; html += urgent.map(i => cardHTML(i)).join(''); }
-    if (last30.length) { html += `<div class="section-header">📌 Last 30 days (${last30.length})</div>`; html += last30.map(i => cardHTML(i)).join(''); }
-    if (older.length)  { html += `<div class="section-header">📂 Older (${older.length})</div>`;        html += older.map(i => cardHTML(i)).join(''); }
+    if (urgent.length) { html += `<div class="section-header urgent">🚨 Urgent — Below target, no response (${urgent.length})</div>`; html += urgent.map(i=>cardHTML(i)).join(''); }
+    if (last30.length) { html += `<div class="section-header">📌 Last 30 days (${last30.length})</div>`; html += last30.map(i=>cardHTML(i)).join(''); }
+    if (older.length)  { html += `<div class="section-header">📂 Older (${older.length})</div>`;        html += older.map(i=>cardHTML(i)).join(''); }
   }
   if (showResolved) {
-    const resolved = allItems.filter(i => i.resolved);
-    if (resolved.length) {
-      html += `<div class="section-header" style="color:#34c759">✅ Resolved — hidden from dashboard (${resolved.length})</div>`;
-      html += resolved.map(i => cardHTML(i, true)).join('');
-    }
+    const res = allItems.filter(i=>i.resolved);
+    if (res.length) { html += `<div class="section-header" style="color:#34c759">✅ Resolved — hidden (${res.length})</div>`; html += res.map(i=>cardHTML(i,true)).join(''); }
   }
   html += '</div>';
   wrap.innerHTML = html;
 }
 
 function updateStats() {
-  const requests   = allItems.filter(i => !i.resolved);
-  const below      = new Set(requests.filter(i => MARKET_DATA[i.channel]?.below).map(i => i.channel)).size;
-  const unanswered = requests.filter(i => i.threadStatus === 'unanswered').length;
-  const resolved   = allItems.filter(i => i.resolved).length;
-  document.getElementById('s-total').textContent     = requests.length;
+  const reqs     = allItems.filter(i => !i.resolved);
+  const below    = new Set(reqs.filter(i => MARKET_DATA[i.channel]?.below).map(i => i.channel)).size;
+  const unans    = reqs.filter(i => i.threadStatus==='unanswered').length;
+  const resolved = allItems.filter(i => i.resolved).length;
+  document.getElementById('s-total').textContent     = reqs.length;
   document.getElementById('s-below').textContent     = below;
-  document.getElementById('s-unanswered').textContent = unanswered;
+  document.getElementById('s-unanswered').textContent = unans;
   document.getElementById('s-resolved').textContent  = resolved;
-  document.getElementById('stats-row').style.display     = 'flex';
-  document.getElementById('filters-wrap').style.display  = '';
-  document.getElementById('type-wrap').style.display     = '';
-  document.getElementById('resolved-count').textContent  = resolved;
+  document.getElementById('stats-row').style.display    = 'flex';
+  document.getElementById('filters-wrap').style.display = '';
+  document.getElementById('resolved-count').textContent = resolved;
   document.getElementById('resolved-toggle-wrap').style.display = resolved > 0 ? '' : 'none';
 }
 
 function buildChannelFilters() {
-  const chs = [...new Set(allItems.map(i => i.channel))].sort();
+  const chs = [...new Set(allItems.map(i=>i.channel))].sort();
   const div = document.getElementById('channel-filters');
-  Array.from(div.querySelectorAll('[data-ch]:not([data-ch="all"])')).forEach(b => b.remove());
+  Array.from(div.querySelectorAll('[data-ch]:not([data-ch="all"])')).forEach(b=>b.remove());
   chs.forEach(ch => {
-    const col = CH_COLORS[ch] || '#007aff';
+    const col = CH_COLORS[ch]||'#007aff';
     const mkt = MARKET_DATA[ch];
     const btn = document.createElement('button');
     btn.className = 'fbtn'; btn.dataset.ch = ch;
-    btn.style.borderColor = col + '50';
-    btn.onclick = function() { filterCh(ch, this); };
-    btn.innerHTML = `#${ch}${mkt?.below ? '<span class="below-dot"></span>' : ''}`;
+    btn.style.borderColor = col+'50';
+    btn.onclick = function(){ filterCh(ch,this); };
+    btn.innerHTML = `#${ch}${mkt?.below?'<span class="below-dot"></span>':''}`;
     div.appendChild(btn);
   });
 }
 
-function filterCh(ch, btn) { activeCh = ch; document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderCards(); }
-function filterType(t, btn) { activeType = t; document.querySelectorAll('.tfbtn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderCards(); }
-function toggleResolved(btn) { showResolved = !showResolved; btn.classList.toggle('active', showResolved); renderCards(); }
+function filterCh(ch, btn) { activeCh=ch; document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderCards(); }
+function toggleResolved(btn) { showResolved=!showResolved; btn.classList.toggle('active',showResolved); renderCards(); }
 
 // ─── Main load ────────────────────────────────────────────────────────────────
-// Single emoji 🔴 only — one search per channel
-const SEARCHES = [...TARGET_CHANNELS].map(ch => ({
-  query: `:red_circle: in:#${ch} after:2025-01-01`,
-  type: 'request'
-}));
-
 async function load() {
   if (WORKER.includes('YOUR-WORKER')) {
     document.getElementById('config-banner').classList.add('visible');
-    document.getElementById('loading').innerHTML = '<p style="color:#ff3b30;padding:40px">⚠️ Please set the WORKER URL in index.html</p>';
+    document.getElementById('loading').innerHTML = '<p style="color:#ff3b30;padding:40px">⚠️ Set the WORKER URL in index.html</p>';
     return;
   }
 
-  const seen     = new Set();
-  const progMsg  = document.getElementById('prog-msg');
-  const progBar  = document.getElementById('prog-bar');
+  const seen      = new Set();
+  const progMsg   = document.getElementById('prog-msg');
+  const progBar   = document.getElementById('prog-bar');
   const foundLive = document.getElementById('found-live');
 
   for (let i = 0; i < SEARCHES.length; i++) {
     const { query } = SEARCHES[i];
     progMsg.textContent = `Searching: ${query}`;
-    progBar.style.width = Math.round(((i + 1) / SEARCHES.length) * 100) + '%';
-
+    progBar.style.width = Math.round(((i+1)/SEARCHES.length)*100)+'%';
     try {
       const data = await apiCall('/slack-search', { query, count: 20 });
       if (data.ok && data.messages?.matches) {
@@ -650,24 +588,19 @@ async function load() {
         parseSlackMatches(data.messages.matches, seen);
         if (allItems.length > before) foundLive.textContent = `${allItems.length} messages found…`;
       }
-    } catch(e) {
-      console.warn('Search failed:', query, e.message);
-    }
+    } catch(e) { console.warn('Search failed:', query, e.message); }
   }
 
   sortItems();
-
   document.getElementById('loading').style.display   = 'none';
   document.getElementById('main-wrap').style.display = '';
   buildChannelFilters();
   updateStats();
   renderCards();
 
-  const now = new Date();
   document.getElementById('updated-time').textContent =
-    'Updated ' + now.toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+    'Updated ' + new Date().toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
 
-  // Run thread checks and Smartsheet counts in parallel
   if (allItems.length > 0) {
     fetchProjectCounts(allItems);
     checkThreads(allItems.filter(i => !i.resolved));
